@@ -82,7 +82,7 @@ def SMSAlet(message, client, recipient_number1, recipient_number2, recipient_num
     )
 
     message = client.messages.create(
-        body=message,
+        body=message,       
         from_=twilio_number,
         to=recipient_number2
     )
@@ -406,82 +406,68 @@ def about() :
 
 ######################################################### Detection camera, smoke && temp ################################################
 def start_camera():
-    """ser = connectSerial()
-    if not ser:
-        st.error("### ❌ Failed to connect to Arduino.")
-        st.error("### Please connect to Arduino  & than run this web-app..")
-        return"""
-    
-    #insert_sensor_data2(500, 500 , 1.0)
-    
-    cap = cv2.VideoCapture(0)
+    # OpenCV video capture (use the default camera)
+    cap = cv2.VideoCapture(0)  # Use the first camera device
+
     if not cap.isOpened():
         st.error("❌ Camera not accessible.")
         return
 
+    # Placeholder for displaying frames
     frame_placeholder = st.empty()
     prediction_placeholder = st.empty()
 
-
-    temperatureC = 0.0
-    analogTemp = 0.0
     count = 0
-    
-        
-        #smoke_placeholder = st.empty()
-        #temp_placeholder = st.empty()
-
     while True:
-        sensor_data = get_sensor_data()
-
-        #smoke_placeholder.text(f"Smoke Level: {}")
-        #temp_placeholder.text(f"Temperature: {} °C")
-        
-      
         ret, frame = cap.read()
+
         if not ret:
-            st.error("❌ Failed to capture frame from camera.")
+            st.error("❌ Failed to capture frame.")
             break
-
         
+        # Convert frame to RGB for display in Streamlit
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame_placeholder.image(frame_rgb, channels="RGB")
-
         
+        # Display the frame using Streamlit with updated parameter
+        frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
+
+        # Predict fire based on the frame
         with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
             img_path = temp_file.name
             cv2.imwrite(img_path, frame_rgb)
 
-        
-        CameraValue = predict_image(img_path)
-        #CameraValue = 0.4
+        # Get sensor data
+        sensor_data = get_sensor_data()
         analogTemp = sensor_data['smoke']
         temperatureC = sensor_data['temp']
+        
+        # Predict fire from image
+        CameraValue = predict_image(img_path)
+
         if CameraValue is not None:
-            if CameraValue > 0.3 and analogTemp >= 250 and temperatureC >= 13:  
+            if CameraValue > 0.3 and analogTemp >= 250 and temperatureC >= 13:
                 count += 1
                 print(f'Fire detected   Count: {count} under the 3 count')
-                prediction_placeholder.subheader(f"🔥 Fire Detected! ")   #{str(CameraValue)} 
+                prediction_placeholder.subheader(f"🔥 Fire Detected!")
+                
                 if count >= 3:
                     insert_sensor_data2(analogTemp, temperatureC , 1.0)
-                    for i in range(6) :
+                    for i in range(6):
                         text_to_speech('Fire')
                         text_to_speech('Fire detected on the 1st floor! Please evacuate immediately using the nearest exit. 🚪⚠️')
-                        if(i == 6) :
+                        if i == 6:
                             message = '🔥 Fire detected on the 1st floor! Please evacuate immediately using the nearest exit. 🚪⚠️'
-                            SMSAlet(message, SMSSource(), recipient_number1, recipient_number2,  recipient_number3, recipient_number4) 
-                        else :
-                            print(i) 
-                    return  
+                            SMSAlet(message, SMSSource(), recipient_number1, recipient_number2, recipient_number3, recipient_number4)
+                    return
             else:
-                prediction_placeholder.subheader(f"✅ No Fire Detected ")   #{str(CameraValue)}
+                prediction_placeholder.subheader(f"✅ No Fire Detected!")
                 insert_sensor_dataTemp(analogTemp, temperatureC)
                 delete_oldest_record()
-                
-                
+        
+        # Sleep to simulate a video frame rate (e.g., 30fps)
+        time.sleep(0.1)
 
-        tt.sleep(1)  
-
+    # Release the video capture object
     cap.release()
     cv2.destroyAllWindows()
     
