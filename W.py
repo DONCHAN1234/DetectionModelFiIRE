@@ -428,8 +428,8 @@ def start_camera():
         # Convert frame to RGB for display in Streamlit
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
-        # Display the frame using Streamlit with updated parameter
-        frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
+        # Display the frame using Streamlit
+        frame_placeholder.image(frame_rgb, channels="RGB")
 
         # Predict fire based on the frame
         with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
@@ -469,6 +469,7 @@ def start_camera():
 
     # Release the video capture object
     cap.release()
+    # Removed cv2.destroyAllWindows() — unnecessary in Streamlit
     cv2.destroyAllWindows()
     
 ######################################################### Detection camera, smoke && temp ################################################
